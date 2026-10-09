@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060810">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+
+<title>Mineage | ماین اج</title>
+<style>
+:root{--bg:#060810;--card:#0e1423cc;--line:#1d2943;--tx:#e8ecf5;--mut:#8591ad;--a:#4df0c0;--b:#4d8bff;--bad:#ff6b6b;--r:20px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--tx);font-family:Vazirmatn,Tahoma,system-ui,sans-serif;overflow-x:hidden;
+background-image:radial-gradient(600px 400px at 85% -5%,#4d8bff22,transparent),radial-gradient(500px 400px at 5% 105%,#4df0c01c,transparent)}
+.en{font-family:"Segoe UI",system-ui,sans-serif;direction:ltr}
+/* splash */
+#splash{position:fixed;inset:0;z-index:50;background:radial-gradient(circle at 50% 42%,#12264a,#060810 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .9s,visibility .9s}
+#splash.hide{opacity:0;visibility:hidden}
+.logo{font-size:clamp(32px,9vw,68px);font-weight:800;letter-spacing:.2em;text-transform:uppercase;background:linear-gradient(90deg,var(--a),var(--b),var(--a));background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 3s linear infinite,rise 1.2s ease both}
+.sub{margin-top:14px;font-size:12px;letter-spacing:.45em;color:var(--mut);animation:rise 1.7s ease both}
+.sbar{margin-top:36px;width:170px;height:3px;background:#17213a;border-radius:3px;overflow:hidden}
+.sbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--b));animation:load 3.6s ease forwards}
+.orb{position:absolute;width:260px;height:260px;border-radius:50%;border:1px solid #4d8bff33;animation:pulse 3s ease-out infinite}
+.orb.o2{animation-delay:1.2s}
+@keyframes shine{to{background-position:200% center}}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes load{to{width:100%}}
+@keyframes pulse{from{transform:scale(.4);opacity:.9}to{transform:scale(2.2);opacity:0}}
+/* layout */
+#app{max-width:480px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px calc(env(safe-area-inset-bottom,0px) + 28px)}
+header{display:flex;align-items:center;justify-content:space-between}
+.brand{font-weight:800;font-size:14px;letter-spacing:.22em;color:var(--a)}
+.brand small{display:block;font-size:10px;letter-spacing:.3em;color:var(--mut);font-weight:500;margin-top:2px}
+.ib{width:42px;height:42px;border-radius:13px;border:1px solid var(--line);background:var(--card);color:var(--tx);font-size:19px;cursor:pointer;backdrop-filter:blur(8px)}
+.ib:active{transform:scale(.94)}
+/* camera */
+#stage{position:relative;margin-top:16px;width:100%;aspect-ratio:3/4;border-radius:26px;overflow:hidden;background:#0a0f1c;border:1px solid var(--line);box-shadow:0 20px 60px #0008,0 0 40px #4d8bff1a}
+video,canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mir{transform:scaleX(-1)}
+#ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--mut);font-size:14px}
+#ph b{font-size:46px;opacity:.6}
+#guide{position:absolute;inset:11% 17%;border-radius:50%;border:2px dashed #ffffff3a;pointer-events:none;transition:.3s}
+#stage.scanning #guide{border:2px solid #4df0c0aa;box-shadow:0 0 30px #4df0c044 inset,0 0 30px #4df0c033}
+.corner{position:absolute;width:26px;height:26px;border:3px solid var(--a);opacity:.85}
+.c1{top:14px;left:14px;border-right:0;border-bottom:0;border-radius:10px 0 0 0}.c2{top:14px;right:14px;border-left:0;border-bottom:0;border-radius:0 10px 0 0}
+.c3{bottom:14px;left:14px;border-right:0;border-top:0;border-radius:0 0 0 10px}.c4{bottom:14px;right:14px;border-left:0;border-top:0;border-radius:0 0 10px 0}
+#scanline{position:absolute;left:0;right:0;top:0;height:100%;display:none;will-change:transform;background:linear-gradient(180deg,transparent calc(100% - 70px),#4df0c033 calc(100% - 30px),#4df0c0aa);border-bottom:2px solid var(--a)}
+#stage.scanning #scanline{display:block;animation:sweep 2.4s ease-in-out infinite alternate}
+@keyframes sweep{from{transform:translate3d(0,-100%,0)}to{transform:translate3d(0,0,0)}}
+#hud{position:absolute;left:12px;right:12px;bottom:12px;display:flex;justify-content:space-between;gap:8px;font-size:12px;direction:ltr}
+.chip{padding:6px 10px;border-radius:10px;background:#060810dd;border:1px solid var(--line);color:var(--mut)}
+.chip.ok{color:var(--a)}.chip.warn{color:#ffc857}
+/* status */
+#status{white-space:pre-line;word-break:break-word;margin-top:16px;min-height:48px;text-align:center;font-size:15px;line-height:1.8;color:#b3bdd4}
+#status.err{color:var(--bad)}
+#prog{height:6px;background:#141c2e;border-radius:6px;overflow:hidden}
+#prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--b));transition:width .25s}
+.pct{margin-top:6px;text-align:center;font-size:12px;color:var(--mut)}
+.btn{margin-top:16px;width:100%;padding:16px;border:0;border-radius:16px;font:800 16px Vazirmatn,Tahoma,sans-serif;color:#03121a;background:linear-gradient(90deg,var(--a),var(--b));cursor:pointer;box-shadow:0 10px 30px #4d8bff33}
+.btn:active{transform:scale(.98)}.btn:disabled{opacity:.5}
+/* result */
+.card{margin-top:18px;padding:18px;border-radius:var(--r);background:var(--card);border:1px solid var(--line);backdrop-filter:blur(10px)}
+#result{display:none;text-align:center;animation:rise .6s ease both}
+.age{font-size:64px;font-weight:800;line-height:1.1;background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
+.rng{margin-top:6px;color:var(--mut);font-size:14px}
+.meter{margin-top:14px;height:8px;border-radius:8px;background:#141c2e;overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--b),var(--a));transition:width 1s}
+.mt{display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--mut)}
+.note{margin-top:12px;font-size:12px;color:var(--mut);line-height:1.8}
+.hh{display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:700}
+.hh button{background:none;border:0;color:var(--mut);font:12px Vazirmatn,Tahoma;cursor:pointer}
+#hist .row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+#hist .row:last-child{border:0}
+#hist .row span:last-child{color:var(--mut);font-size:12px}
+.empty{color:var(--mut);font-size:13px;margin-top:10px}
+/* settings sheet */
+#ov{position:fixed;inset:0;background:#000a;z-index:30;opacity:0;visibility:hidden;transition:.25s}
+#ov.on{opacity:1;visibility:visible}
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:31;max-width:480px;margin:0 auto;background:#0b1120;border:1px solid var(--line);border-radius:26px 26px 0 0;padding:10px 18px calc(env(safe-area-inset-bottom,0px) + 22px);transform:translateY(105%);transition:transform .35s cubic-bezier(.2,.8,.2,1);max-height:86vh;overflow-y:auto}
+#sheet.on{transform:none}
+.grab{width:44px;height:4px;border-radius:4px;background:var(--line);margin:4px auto 14px}
+.sh{font-size:17px;font-weight:800;margin-bottom:6px}
+.set{padding:14px 0;border-bottom:1px solid var(--line)}
+.set:last-of-type{border:0}
+.set label{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.set small{display:block;color:var(--mut);font-size:12px;margin-top:6px;line-height:1.7}
+.seg{display:flex;gap:6px;margin-top:10px}
+.seg button{flex:1;padding:10px 0;border-radius:12px;border:1px solid var(--line);background:#0e1526;color:var(--mut);font:13px Vazirmatn,Tahoma;cursor:pointer}
+.seg button.on{background:linear-gradient(90deg,#4df0c022,#4d8bff22);border-color:var(--a);color:var(--a);font-weight:700}
+.sw{position:relative;width:48px;height:28px;flex:none}
+.sw input{opacity:0;width:100%;height:100%;position:absolute;z-index:2;cursor:pointer}
+.sw i{position:absolute;inset:0;border-radius:28px;background:#1a2540;transition:.2s}
+.sw i::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked+i{background:linear-gradient(90deg,var(--a),var(--b))}
+.sw input:checked+i::after{transform:translateX(20px)}
+input[type=range]{width:100%;margin-top:12px;accent-color:var(--a)}
+.appn{margin-top:22px;font-size:clamp(26px,7vw,44px);font-weight:800;letter-spacing:.3em;color:#fff;opacity:0;animation:rise 1s ease 1.5s forwards;text-shadow:0 0 30px #4df0c088}
+.ghost{background:transparent;border:1px solid var(--line);color:var(--tx);box-shadow:none;font-weight:700}
+.truth{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--mut);line-height:1.8}
+.trow{display:flex;gap:8px;margin-top:10px}
+.trow input{flex:1;min-width:0;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0b1120;color:var(--tx);font:16px Vazirmatn,Tahoma;text-align:center}
+.trow button{padding:0 22px;border:0;border-radius:12px;background:linear-gradient(90deg,var(--a),var(--b));color:#03121a;font:800 14px Vazirmatn,Tahoma;cursor:pointer}
+.tm{min-height:20px;margin-top:6px;color:var(--a)}
+#rsheet{position:fixed;left:0;right:0;bottom:0;z-index:32;max-width:480px;margin:0 auto;background:#0b1120;border:1px solid var(--line);border-radius:26px 26px 0 0;padding:10px 20px calc(env(safe-area-inset-bottom,0px) + 22px);transform:translateY(105%);transition:transform .35s cubic-bezier(.2,.8,.2,1);text-align:center}
+#rsheet.on{transform:none}
+.rico{font-size:44px;margin-top:4px}.rd{color:var(--mut);font-size:14px;line-height:1.9;margin-top:6px}
+.rn{margin-top:16px;font-size:12px;color:#5b6786;cursor:pointer}
+.foot{margin-top:22px;text-align:center;font-size:11px;letter-spacing:.3em;color:#4a5673}
+</style>
+</head>
+<body>
+<div id="splash"><div class="orb"></div><div class="orb o2"></div><div class="logo en">Minesword Team</div><div class="sub en">PRESENTS</div><div class="appn en">MINEAGE</div><div class="sbar"><i></i></div></div>
+
+<div id="app">
+  <header>
+    <div class="brand en">MINEAGE<small data-t="tag">FACE AGE SCANNER</small></div>
+    <button class="ib" id="gear" aria-label="settings">⚙</button>
+  </header>
+
+  <div id="stage">
+    <div id="ph"><b>◉</b><span data-t="ph">دوربین هنوز فعال نیست</span></div>
+    <video id="v" playsinline muted autoplay class="mir"></video>
+    <canvas id="c" class="mir"></canvas>
+    <div id="guide"></div><div id="scanline"></div>
+    <i class="corner c1"></i><i class="corner c2"></i><i class="corner c3"></i><i class="corner c4"></i>
+    <div id="hud"><span class="chip" id="hLight">LIGHT --</span><span class="chip" id="hDist">DIST --</span><span class="chip" id="hFps">POSE --</span></div>
+  </div>
+
+  <div id="status" data-t="idle">برای شروع، دکمه‌ی اسکن را بزنید.</div>
+  <div id="prog"><i id="pb"></i></div>
+  <div class="pct" id="pct"></div>
+  <button class="btn" id="btn" data-t="start">شروع اسکن صورت</button>
+  <button class="btn ghost" id="rateBtn" data-t="rate">⭐ ثبت نظر در مایکت</button>
+
+  <div class="card" id="result">
+    <div class="age" id="age"></div>
+    <div class="rng" id="rng"></div>
+    <div class="rng" id="det" style="font-size:11px;opacity:.7;direction:ltr"></div>
+    <div class="meter"><i id="mf"></i></div>
+    <div class="mt"><span data-t="conf">میزان اطمینان</span><span id="mv"></span></div>
+    <div class="truth"><div data-t="truth"></div><div class="trow"><input id="trueAge" type="number" inputmode="numeric" min="1" max="110" placeholder="52"><button id="trueBtn" data-t="save">ثبت</button></div><div class="tm" id="trueMsg"></div></div>
+    <div class="note" data-t="disc">این عدد یک تخمین هوش مصنوعی است و ممکن است چند سال خطا داشته باشد.</div>
+  </div>
+
+  <div class="card">
+    <div class="hh"><span data-t="hist">تاریخچه‌ی اسکن‌ها</span><button id="clr" data-t="clear">پاک کردن</button></div>
+    <div id="hist"></div>
+  </div>
+  <div class="foot en">© MINESWORD TEAM</div>
+</div>
+
+<div id="ov"></div>
+<div id="sheet">
+  <div class="grab"></div>
+  <div class="sh" data-t="settings">تنظیمات</div>
+
+  <div class="set"><label><span data-t="cam">دوربین</span></label>
+    <div class="seg" id="sCam"><button data-v="user" data-t="front">جلو</button><button data-v="environment" data-t="back">عقب</button></div></div>
+
+  <div class="set"><label><span data-t="mir">حالت آینه</span><span class="sw"><input type="checkbox" id="sMir"><i></i></span></label></div>
+  <div class="set"><label><span data-t="vib">لرزش پس از اسکن</span><span class="sw"><input type="checkbox" id="sVib"><i></i></span></label></div>
+
+  <div class="set"><label><span data-t="learn">آموزش دقت</span><span id="learnN">0</span></label><small data-t="learnD"></small><div class="seg"><button id="learnReset" data-t="learnR"></button></div></div>
+  <div class="set"><label><span data-t="lang">زبان</span></label>
+    <div class="seg" id="sLang"><button data-v="fa">فارسی</button><button data-v="en">English</button></div></div>
+  <button class="btn" id="close" data-t="done">تمام</button>
+</div>
+
+<div id="rsheet"><div class="grab"></div><div class="rico">⭐</div><div class="sh" data-t="rtitle"></div><div class="rd" data-t="rdesc"></div>
+  <button class="btn" id="rGo" data-t="rgo"></button><button class="btn ghost" id="rLater" data-t="rlater"></button><div class="rn" id="rNever" data-t="rnever"></div></div>
+
+<script>
+/* --- آفلاین: اول از فایل‌های خود سایت (lib/ و models/)، و فقط اگر نبود از CDN --- */
+const abs = p => new URL(p, location.href).href;
+const FA_LOCAL=abs("models/face"), FA_CDN="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model";
+const HU_LOCAL=abs("models/human/"), HU_CDN="https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/models/";
+let dbg="";
+function loadScript(list){
+  const tried=[];
+  return list.reduce((p,src)=>p.catch(()=>new Promise((res,rej)=>{ const e=document.createElement("script"); e.src=src; e.onload=res; e.onerror=()=>{ e.remove(); tried.push(src); rej(new Error("script failed: "+tried.join(" | "))); }; document.head.appendChild(e); })), Promise.reject());
+}
+const libsP=Promise.all([
+  loadScript(["lib/face-api.js","https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js"]),
+  loadScript(["lib/human.js","https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/dist/human.js"])
+]);
+libsP.catch(()=>{});
+if("serviceWorker" in navigator) addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+const CALIB = [[3,2],[18,15],[27,27],[37,52],[50,67],[62,77]];   // [سن خام مدل, سن واقعی]
+const MIN_SAMPLES = 15;
+const L = {
+ fa:{tag:"ماین اج • اسکنر سن چهره",ph:"دوربین هنوز فعال نیست",idle:"برای شروع، دکمه‌ی اسکن را بزنید.",start:"شروع اسکن صورت",again:"اسکن دوباره",scanning:"اسکن...",
+  conf:"میزان اطمینان",disc:"این عدد یک تخمین هوش مصنوعی است و ممکن است چند سال خطا داشته باشد.",hist:"تاریخچه‌ی اسکن‌ها",clear:"پاک کردن",
+  settings:"تنظیمات",dur:"مدت اسکن",durD:"اسکن طولانی‌تر یعنی نمونه‌ی بیشتر و نتیجه‌ی پایدارتر.",sens:"حساسیت تشخیص چهره",sensD:"عدد بالاتر یعنی سخت‌گیرانه‌تر؛ فقط چهره‌های کاملاً واضح قبول می‌شوند.",
+  cam:"دوربین",front:"جلو",back:"عقب",cal:"تصحیح خودکار سن",calD:"خطای معمول مدل در سنین بالا و نوجوانی را اصلاح می‌کند.",mir:"حالت آینه",vib:"لرزش پس از اسکن",lang:"زبان",done:"تمام",
+  load:"در حال آماده‌سازی دوربین و مدل‌ها…",camErr:"ایرادی وجود دارد: دسترسی به دوربین ممکن نیست. اجازه‌ی دوربین را بدهید.",
+  hold:"صورت خود را داخل کادر و روبه‌روی دوربین نگه دارید…",s1:"در حال اسکن دقیق صورت…",s2:"در حال تحلیل ویژگی‌های چهره…",s3:"در حال محاسبه‌ی سن تقریبی…",
+  noFace:"صورت شناسایی نشد؛ روبه‌روی دوربین و در نور کافی قرار بگیرید.",fail:"ایرادی وجود دارد: صورت شناسایی نشد. دوباره تلاش کنید.",ok:"اسکن با موفقیت انجام شد ✓",
+  year:"سال",range:"بازه‌ی تقریبی",to:"تا",none:"هنوز اسکنی انجام نشده.",light:"نور",dist:"فاصله",low:"کم",good:"خوب",hi:"زیاد",near:"نزدیک",far:"دور",okd:"مناسب",pose:"حالت",netErr:"ایرادی وجود دارد: بارگذاری مدل‌ها ناموفق بود. اینترنت را بررسی کنید.",rate:"⭐ ثبت نظر در مایکت",rtitle:"از ماین اج راضی هستید؟",rdesc:"نظر شما در مایکت به ما کمک می‌کند برنامه را دقیق‌تر و بهتر کنیم.",rgo:"ثبت نظر در مایکت",rlater:"بعداً",rnever:"دیگر نمایش نده",truth:"سن واقعی این فرد را می‌دانید؟ وارد کنید تا برنامه دقیق‌تر شود:",save:"ثبت",saved:"ثبت شد ✓ دفعه‌ی بعد دقیق‌تر است.",learn:"آموزش دقت",learnD:"تعداد نمونه‌های واقعی که برنامه روی همین دستگاه یاد گرفته است.",learnR:"پاک کردن آموزش دقت",h_look:"مستقیم به دوربین نگاه کنید.",h_closer:"کمی نزدیک‌تر شوید.",h_far:"کمی دورتر شوید.",h_turn:"صورت را صاف و روبه‌روی دوربین نگه دارید.",h_still:"ثابت بمانید.",h_dark:"نور کافی نیست؛ به جای روشن‌تر بروید.",h_bright:"نور بیش‌ازحد زیاد است؛ از نور مستقیم دور شوید.",h_blur:"تصویر محو است؛ ثابت بمانید."},
+ en:{tag:"FACE AGE SCANNER • BY MINESWORD TEAM",ph:"Camera is not active",idle:"Press the button to start scanning.",start:"Start face scan",again:"Scan again",scanning:"Scanning...",
+  conf:"Confidence",disc:"This is an AI estimate and may be off by a few years.",hist:"Scan history",clear:"Clear",
+  settings:"Settings",dur:"Scan duration",durD:"Longer scans collect more samples for a steadier result.",sens:"Face detection strictness",sensD:"Higher is stricter; only clearly visible faces are accepted.",
+  cam:"Camera",front:"Front",back:"Back",cal:"Auto age correction",calD:"Corrects the model's usual error for older adults and teens.",mir:"Mirror mode",vib:"Vibrate after scan",lang:"Language",done:"Done",
+  load:"Preparing camera and models…",camErr:"There is a problem: camera access is not possible. Please allow camera permission.",
+  hold:"Keep your face inside the frame, facing the camera…",s1:"Scanning the face in detail…",s2:"Analyzing facial features…",s3:"Calculating approximate age…",
+  noFace:"Face not detected; face the camera in good light.",fail:"There is a problem: face not detected. Please try again.",ok:"Scan completed ✓",
+  year:"years",range:"Approx. range",to:"to",none:"No scans yet.",light:"LIGHT",dist:"DIST",low:"LOW",good:"GOOD",hi:"HIGH",near:"NEAR",far:"FAR",okd:"OK",pose:"POSE",netErr:"There is a problem: models failed to load. Check your internet.",rate:"⭐ Rate on Myket",rtitle:"Enjoying Mineage?",rdesc:"Your review on Myket helps us make the app better and more accurate.",rgo:"Rate on Myket",rlater:"Later",rnever:"Don't show again",truth:"Know this person's real age? Enter it to make the app more accurate:",save:"Save",saved:"Saved ✓ Next time will be more accurate.",learn:"Accuracy training",learnD:"Number of real samples learned on this device.",learnR:"Reset accuracy training",h_look:"Look straight at the camera.",h_closer:"Move a little closer.",h_far:"Move a little farther.",h_turn:"Keep your face straight toward the camera.",h_still:"Hold still.",h_dark:"Not enough light; move somewhere brighter.",h_bright:"Too bright; avoid direct light.",h_blur:"Image is blurry; hold still."}
+};
+const $ = id => document.getElementById(id);
+const v=$("v"), c=$("c"), st=$("status"), btn=$("btn"), pb=$("pb");
+let S = {cam:"user", mir:true, vib:true, lang:"fa"};
+try { Object.assign(S, JSON.parse(localStorage.getItem("mw_set") || "{}")); } catch(e){}
+let H = []; try { H = JSON.parse(localStorage.getItem("mw_hist") || "[]"); } catch(e){}
+let stream=null, modelsOK=false, camKey=null, busy=false;
+const t = k => (L[S.lang][k] ?? k);
+const save = () => { try { localStorage.setItem("mw_set", JSON.stringify(S)); } catch(e){} };
+const saveH = () => { try { localStorage.setItem("mw_hist", JSON.stringify(H.slice(0,8))); } catch(e){} };
+const say = (m, err) => { if(st.textContent!==m) st.textContent=m; const k=err?"err":""; if(st.className!==k) st.className=k; };
+
+setTimeout(() => $("splash").classList.add("hide"), 3800);
+
+/* ---------- UI / settings ---------- */
+function applyLang(){
+  document.documentElement.lang = S.lang; document.documentElement.dir = S.lang==="fa" ? "rtl" : "ltr";
+  document.querySelectorAll("[data-t]").forEach(e => e.textContent = t(e.dataset.t));
+  btn.textContent = $("result").style.display==="block" ? t("again") : t("start");
+  if(!busy) say(t("idle"));
+  renderHist(); renderSettings();
+}
+function renderSettings(){
+    [["sCam","cam"],["sLang","lang"]].forEach(([id,k]) =>
+    document.querySelectorAll("#"+id+" button").forEach(b => b.classList.toggle("on", String(S[k])===b.dataset.v)));
+  $("learnN").textContent=CP.length; $("sMir").checked=S.mir; $("sVib").checked=S.vib;
+  const m = S.mir && S.cam==="user"; v.classList.toggle("mir", m); c.classList.toggle("mir", m);
+}
+function seg(id,key,num){ $(id).onclick = e => { const b=e.target.closest("button"); if(!b||busy) return; S[key]=num?+b.dataset.v:b.dataset.v; save(); key==="lang"?applyLang():renderSettings(); if(key==="cam") stopCam(); }; }
+seg("sCam","cam"); seg("sLang","lang");
+$("sMir").onchange = e => { S.mir=e.target.checked; save(); renderSettings(); };
+$("sVib").onchange = e => { S.vib=e.target.checked; save(); };
+const sheet = on => { $("sheet").classList.toggle("on",on); $("ov").classList.toggle("on",on); };
+$("gear").onclick = () => sheet(true); $("ov").onclick = () => { sheet(false); rate(false); }; $("close").onclick = () => sheet(false);
+$("clr").onclick = () => { H=[]; saveH(); renderHist(); };
+function renderHist(){
+  const h=$("hist");
+  if(!H.length){ h.innerHTML = '<div class="empty">'+t("none")+'</div>'; return; }
+  h.innerHTML = H.map(x => '<div class="row"><span>≈ '+x.age+' '+t("year")+'</span><span>'+new Date(x.ts).toLocaleString(S.lang==="fa"?"fa-IR":"en-US",{hour:"2-digit",minute:"2-digit",month:"short",day:"numeric"})+'</span></div>').join("");
+}
+
+/* ---------- camera / model ---------- */
+function stopCam(){ if(stream){ stream.getTracks().forEach(x=>x.stop()); stream=null; camKey=null; v.srcObject=null; $("ph").style.display="flex"; } }
+async function openCam(){
+  if(stream && camKey===S.cam) return;
+  stopCam();
+  stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:S.cam, width:{ideal:960}, height:{ideal:720} }, audio:false });
+  camKey = S.cam; v.srcObject = stream;
+  await new Promise(r => v.onloadedmetadata = r); await v.play();
+  $("ph").style.display = "none";
+}
+const HCFG={
+  modelBasePath:HU_LOCAL,
+  backend:"webgl", debug:false, async:true, warmup:"none", cacheSensitivity:0,
+  face:{ enabled:true, detector:{rotation:false,maxDetected:1,minConfidence:0.3}, mesh:{enabled:true}, attention:{enabled:false}, iris:{enabled:false},
+         description:{enabled:true,skipFrames:0,skipTime:0}, emotion:{enabled:false}, antispoof:{enabled:false}, liveness:{enabled:false} },
+  body:{enabled:false}, hand:{enabled:false}, object:{enabled:false}, gesture:{enabled:false}, segmentation:{enabled:false}
+};
+let human=null;
+async function loadModels(){
+  if(modelsOK) return;
+  try{ await libsP; }catch(e){ throw new Error("LIB: "+(e&&e.message||e)); }
+  try{ faceapi.tf.enableProdMode(); }catch(e){}
+  const errs=[]; let ok=false;
+  for(const b of [FA_LOCAL,FA_CDN]){ try{ await faceapi.nets.ageGenderNet.loadFromUri(b); ok=true; break; }catch(e){ errs.push("A "+b+" -> "+(e&&e.message||e)); } }
+  if(!ok) throw new Error(errs.join("\n"));
+  if(!human){
+    ok=false;
+    for(const b of [HU_LOCAL,HU_CDN]){ try{ const h=new Human.Human({...HCFG, modelBasePath:b}); await h.load(); human=h; ok=true; break; }catch(e){ errs.push("B "+b+" -> "+(e&&e.message||e)); } }
+    if(!ok) throw new Error(errs.join("\n"));
+  }
+  modelsOK=true;
+}
+
+/* ---------- helpers ---------- */
+// آموزش دقت: نقطه‌هایی که کاربر سن واقعی را وارد کرده {r: عدد ترکیبی مدل‌ها، t: سن واقعی}
+let CP=[]; try{ CP=JSON.parse(localStorage.getItem("mw_cp2")||"[]"); }catch(e){}
+const saveCP=()=>{ try{ localStorage.setItem("mw_cp2",JSON.stringify(CP.slice(-40))); }catch(e){} };
+let lastRaw=null;
+function calA(x){            // تصحیح مدل A (face-api): بزرگ‌ترها را جوان‌تر و نوجوان‌ها را بزرگ‌تر می‌بیند
+  const T=CALIB;
+  if(x<=T[0][0]) return Math.max(1,x-1);
+  for(let i=1;i<T.length;i++){ const [x0,y0]=T[i-1],[x1,y1]=T[i]; if(x<=x1) return y0+(y1-y0)*(x-x0)/(x1-x0); }
+  const [x0,y0]=T[T.length-2],[x1,y1]=T[T.length-1]; return Math.min(90,y1+(y1-y0)*(x-x1)/Math.max(1,x1-x0)*0.8);
+}
+function calibrate(x){       // تصحیح نهایی بر اساس نمونه‌های واقعیِ کاربر (میانگین وزنی محلی)
+  if(!CP.length) return x;
+  let sw=0, sd=0;
+  for(const q of CP){ const w=Math.exp(-((x-q.r)**2)/98); sw+=w; sd+=w*(q.t-q.r); }
+  return clamp(x + sd/(sw+0.3), 1, 95);
+}
+const median = a => { const s=[...a].sort((x,y)=>x-y); return s[Math.floor(s.length/2)]; };
+function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const raf = () => new Promise(r=>requestAnimationFrame(r));
+function chip(id,txt,cls){ const e=$(id), k="chip "+(cls||""); if(e.textContent!==txt) e.textContent=txt; if(e.className!==k) e.className=k; }
+
+/* ---------- موتور اسکن دو مدلی ----------
+   مدل B: Human / faceres  → تشخیص چهره، مش ۴۶۸ نقطه‌ای، زاویه‌ی سر و سن
+   مدل A: face-api ageGenderNet → سن روی چهره‌ی هم‌تراز شده (۳ حالت: اصلی، آینه، زوم)
+   نتیجه: میانگین دو مدل بعد از تصحیح + کیفیت‌سنجی هر فریم + توقف خودکار */
+const OUT=112, TARGET=30, MIN_OK=12, MAX_MS=40000, GIVEUP_MS=9000;
+const mk = () => { const k=document.createElement("canvas"); k.width=k.height=OUT; return k; };
+const ac=mk(), fc=mk(), zc=mk();
+const acx=ac.getContext("2d",{willReadFrequently:true}), fcx=fc.getContext("2d"), zcx=zc.getContext("2d");
+
+function eyePts(m){
+  const A=(i,j)=>({x:(m[i][0]+m[j][0])/2, y:(m[i][1]+m[j][1])/2});
+  return { le:A(33,133), re:A(362,263) };     // چشم چپ و راست تصویر
+}
+function drawAligned(ctx, e, zoom){
+  const ang=Math.atan2(e.re.y-e.le.y, e.re.x-e.le.x), ed=Math.hypot(e.re.x-e.le.x, e.re.y-e.le.y);
+  const s=(0.36*OUT*zoom)/ed, cx=(e.le.x+e.re.x)/2, cy=(e.le.y+e.re.y)/2;
+  ctx.setTransform(1,0,0,1,0,0); ctx.fillStyle="#808080"; ctx.fillRect(0,0,OUT,OUT);
+  ctx.translate(OUT/2, OUT*0.41); ctx.rotate(-ang); ctx.scale(s,s); ctx.translate(-cx,-cy);
+  ctx.drawImage(v,0,0); ctx.setTransform(1,0,0,1,0,0);
+}
+function cropStats(){
+  const w=56, d=acx.getImageData(28,28,w,w).data, g=new Float32Array(w*w);
+  let m=0; for(let i=0;i<g.length;i++){ g[i]=d[i*4]*.3+d[i*4+1]*.59+d[i*4+2]*.11; m+=g[i]; } m/=g.length;
+  let sd=0; for(let i=0;i<g.length;i++) sd+=(g[i]-m)**2; sd=Math.sqrt(sd/g.length);
+  let s=0,s2=0,n=0;
+  for(let y=1;y<w-1;y++) for(let x=1;x<w-1;x++){ const i=y*w+x, l=4*g[i]-g[i-1]-g[i+1]-g[i-w]-g[i+w]; s+=l; s2+=l*l; n++; }
+  return { mean:m, sd, lap:s2/n-(s/n)**2 };
+}
+
+/* رسم چهره: کادر، خطوط اجزای صورت و نقطه‌های مش */
+const GK=["silhouette","leftEyebrowUpper","rightEyebrowUpper","leftEyeUpper0","leftEyeLower0","rightEyeUpper0","rightEyeLower0","lipsUpperOuter","lipsLowerOuter","midwayBetweenEyes","noseBottom"];
+function meshTarget(f){
+  const p=[], g=[], a=f.annotations||{};
+  for(const k of GK){ const q=a[k]; if(!q||!q.length) continue; const s=p.length; q.forEach(z=>p.push({x:z[0],y:z[1]})); g.push([s,p.length-1]); }
+  for(let i=0;i<468;i+=9) p.push({x:f.mesh[i][0], y:f.mesh[i][1]});
+  return {p,g};
+}
+function drawFace(ctx,p,g,b,good){
+  const col = good ? "#4df0c0" : "#ffc857", k=Math.max(14,b.width*.12);
+  ctx.strokeStyle=col; ctx.lineWidth=3; ctx.lineCap="round";
+  [[b.x,b.y,1,1],[b.x+b.width,b.y,-1,1],[b.x,b.y+b.height,1,-1],[b.x+b.width,b.y+b.height,-1,-1]].forEach(([x,y,dx,dy])=>{
+    ctx.beginPath(); ctx.moveTo(x+dx*k,y); ctx.lineTo(x,y); ctx.lineTo(x,y+dy*k); ctx.stroke(); });
+  ctx.lineWidth=1.5; ctx.globalAlpha=.65;
+  g.forEach(([a,z])=>{ ctx.beginPath(); ctx.moveTo(p[a].x,p[a].y); for(let i=a+1;i<=z;i++) ctx.lineTo(p[i].x,p[i].y); ctx.stroke(); });
+  ctx.fillStyle=col; ctx.beginPath(); p.forEach(q=>{ ctx.moveTo(q.x+2,q.y); ctx.arc(q.x,q.y,2,0,6.3); }); ctx.fill();
+  ctx.globalAlpha=1;
+}
+let tgt=null, cur=null, drawing=false;
+const octx=c.getContext("2d");
+function renderLoop(){                 // رندر ۶۰fps جدا از تشخیص، با نرم‌کردن حرکت
+  if(!drawing) return;
+  octx.clearRect(0,0,c.width,c.height);
+  if(tgt && performance.now()-tgt.t<400){
+    if(!cur || cur.p.length!==tgt.p.length) cur={ b:{...tgt.b}, p:tgt.p.map(q=>({x:q.x,y:q.y})) };
+    else {
+      const k=0.4;
+      for(const key of ["x","y","width","height"]) cur.b[key]+=(tgt.b[key]-cur.b[key])*k;
+      cur.p.forEach((q,i)=>{ q.x+=(tgt.p[i].x-q.x)*k; q.y+=(tgt.p[i].y-q.y)*k; });
+    }
+    drawFace(octx,cur.p,tgt.g,cur.b,tgt.good);
+  } else cur=null;
+  requestAnimationFrame(renderLoop);
+}
+function estimate(s){
+  const as=s.map(x=>x.a), m=median(as), mad=median(as.map(a=>Math.abs(a-m)))*1.4826, lim=Math.max(3, 2.5*mad);
+  const g=s.filter(x=>Math.abs(x.a-m)<=lim), W=g.reduce((q,x)=>q+x.w,0);
+  const mean=g.reduce((q,x)=>q+x.a*x.w,0)/W, sd=Math.sqrt(g.reduce((q,x)=>q+x.w*(x.a-mean)**2,0)/W);
+  const neff=W*W/g.reduce((q,x)=>q+x.w*x.w,0);
+  return { mean, sd, n:g.length, se:sd/Math.sqrt(Math.max(1,neff)) };
+}
+
+async function scan(){
+  busy=true; btn.disabled=true; $("result").style.display="none"; pb.style.width="0"; $("pct").textContent="";
+  say(t("load"));
+  const [ce,me] = await Promise.all([openCam().then(()=>0,()=>1), loadModels().then(()=>0,e=>{ dbg=String(e&&e.message||e).slice(0,400); return 1; })]);
+  if(ce){ say(t("camErr"), true); busy=false; btn.disabled=false; return; }
+  if(me){ say(t("netErr")+"\n"+dbg, true); busy=false; btn.disabled=false; return; }
+
+  const net=faceapi.nets.ageGenderNet, smp=[];
+  const t0=Date.now(); let lastFace=t0, lastBox=null, bestLap=1;
+  c.width=v.videoWidth; c.height=v.videoHeight; const ctx=c.getContext("2d");
+  $("stage").classList.add("scanning"); say(t("hold")); tgt=null; cur=null; drawing=true; renderLoop();
+
+  while(true){
+    const now=Date.now();
+    if(now-t0>MAX_MS || now-lastFace>GIVEUP_MS) break;
+    const p=Math.min(1, smp.length/TARGET);
+    pb.style.width=(p*100)+"%"; $("pct").textContent=Math.round(p*100)+"%";
+
+    let res=null; try{ res=await human.detect(v); }catch(e){}
+    const f=res && res.face && res.face[0];
+    if(!f || !f.mesh || f.mesh.length<468){ say(t("noFace"), true); chip("hDist",t("dist")+" --","warn"); chip("hFps",t("pose")+" --","warn"); await raf(); continue; }
+    lastFace=now;
+
+    const [bx,by,bw,bh]=f.box, b={x:bx,y:by,width:bw,height:bh}, ratio=bw/c.width;
+    const rot=(f.rotation&&f.rotation.angle)||{yaw:0,pitch:0,roll:0};
+    const yawDev=Math.abs(rot.yaw||0), score=(f.faceScore ?? f.boxScore ?? 1);
+    const shift = lastBox ? Math.hypot(bx-lastBox.x, by-lastBox.y)/bw : 0; lastBox=b;
+    let hint=null;
+    if(score<0.6) hint="h_look";
+    else if(ratio<0.24) hint="h_closer";
+    else if(ratio>0.8) hint="h_far";
+    else if(yawDev>0.35 || Math.abs(rot.pitch||0)>0.4 || Math.abs(rot.roll||0)>0.5) hint="h_turn";
+    else if(shift>0.12) hint="h_still";
+
+    const eyes=eyePts(f.mesh); let st2=null;
+    if(!hint){
+      drawAligned(acx, eyes, 1); st2=cropStats(); bestLap=Math.max(bestLap*0.995, st2.lap);
+      chip("hLight", t("light")+" "+(st2.mean<55?t("low"):st2.mean>215?t("hi"):t("good")), st2.mean<55||st2.mean>215?"warn":"ok");
+      if(st2.mean<55 || st2.sd<18) hint="h_dark";
+      else if(st2.mean>215) hint="h_bright";
+      else if(smp.length>4 && st2.lap<bestLap*0.25) hint="h_blur";
+    }
+    chip("hDist", t("dist")+" "+(ratio<.24?t("far"):ratio>.8?t("near"):t("okd")), ratio<.24||ratio>.8?"warn":"ok");
+    chip("hFps", t("pose")+" "+(yawDev<=.35&&!hint?t("okd"):"--"), hint?"warn":"ok");
+    const mt=meshTarget(f);
+    tgt={ b, p:mt.p, g:mt.g, good:!hint, t:performance.now() };
+
+    if(hint){ say("⚠ "+t(hint)); await raf(); continue; }
+
+    // مدل A روی سه نسخه‌ی چهره‌ی هم‌تراز شده
+    fcx.setTransform(-1,0,0,1,OUT,0); fcx.drawImage(ac,0,0); fcx.setTransform(1,0,0,1,0,0);
+    drawAligned(zcx, eyes, 1.12);
+    const out = await net.predictAgeAndGender([ac,fc,zc]); const [p1,p2,p3] = Array.isArray(out) ? out : [out,out,out];
+    const a = p1.age*0.4 + p2.age*0.3 + p3.age*0.3;
+    const w = clamp(st2.lap/bestLap, 0.3, 1) * (1 - Math.min(yawDev,0.3)*2) * score;
+    if(isFinite(a)) smp.push({a, b:(typeof f.age==="number"&&isFinite(f.age)&&f.age>0)?f.age:NaN, w:Math.max(0.05,w)});
+    say((p<.4?t("s1"):p<.75?t("s2"):t("s3")) + "  " + smp.length + "/" + TARGET);
+
+    if(smp.length>=TARGET){
+      const e=estimate(smp.map(x=>({a:isFinite(x.b)?(x.a+x.b)/2:x.a, w:x.w})));
+      if(e.se<1.0 || smp.length>=TARGET*1.8) break;
+    }
+  }
+  $("stage").classList.remove("scanning"); drawing=false; ctx.clearRect(0,0,c.width,c.height);
+  busy=false; btn.disabled=false; btn.textContent=t("again");
+
+  if(smp.length<MIN_OK){ pb.style.width="0"; $("pct").textContent=""; say(t("fail"), true); return; }
+  pb.style.width="100%"; $("pct").textContent="100%";
+
+  const eA=estimate(smp.map(x=>({a:x.a,w:x.w})));
+  const sb=smp.filter(x=>isFinite(x.b)).map(x=>({a:x.b,w:x.w}));
+  const eB=sb.length>=MIN_OK?estimate(sb):null;
+  const cA=calA(eA.mean), cB=eB?eB.mean:null;
+  const ens=cB==null?cA:(cA+cB)/2, diff=cB==null?0:Math.abs(cA-cB);
+  lastRaw=ens; $("trueMsg").textContent="";
+  const age=Math.round(calibrate(ens)), sd=Math.max(eA.sd, eB?eB.sd:0);
+  const sp=Math.max(2, Math.round(sd*1.2 + (age>40?4:3) + diff*0.35));
+  const conf=Math.round(clamp(97 - sd*6 - Math.max(0,TARGET-eA.n)*0.9 - diff*1.2, 30, 97));
+
+  say(t("ok"));
+  $("age").textContent="≈ "+age;
+  $("rng").textContent=t("range")+": "+Math.max(1,age-sp)+" "+t("to")+" "+(age+sp)+" "+t("year");
+  $("det").textContent="A: "+Math.round(eA.mean)+"→"+Math.round(cA)+(cB!=null?"  •  B: "+Math.round(cB):"")+"  •  n="+smp.length;
+  $("mv").textContent=conf+"%"; $("mf").style.width="0"; $("result").style.display="block";
+  requestAnimationFrame(()=>$("mf").style.width=conf+"%");
+  H.unshift({age, ts:Date.now()}); saveH(); renderHist(); maybeAskRate();
+  if(S.vib && navigator.vibrate) navigator.vibrate([60,40,60]);
+  $("result").scrollIntoView({behavior:"smooth", block:"center"});
+}
+
+/* ---------- Myket rating ---------- */
+const PKG="com.mineswordteam.mineage";
+let R={scans:0,last:0,done:false,never:false}; try{ Object.assign(R,JSON.parse(localStorage.getItem("mw_rate")||"{}")); }catch(e){}
+const saveR=()=>{ try{ localStorage.setItem("mw_rate",JSON.stringify(R)); }catch(e){} };
+const rate=on=>{ $("rsheet").classList.toggle("on",on); $("ov").classList.toggle("on",on); };
+function openMyket(){
+  let left=false; const f=()=>{ if(document.hidden) left=true; };
+  document.addEventListener("visibilitychange",f);
+  location.href="myket://comment?id="+PKG;           // باز کردن صفحه‌ی نظر در برنامه‌ی مایکت
+  setTimeout(()=>{ document.removeEventListener("visibilitychange",f);
+    if(!left){ const w=window.open("https://myket.ir/app/"+PKG,"_blank"); if(!w) location.href="https://myket.ir/app/"+PKG; } },1500);
+  R.done=true; R.last=Date.now(); R.scans=0; saveR();
+}
+function maybeAskRate(){            // اولین بار بعد از ۳ اسکن؛ بعد از آن حداقل هر ۱ روز و ۵ اسکن (بعد از ثبت نظر: ۳۰ روز)
+  R.scans++; saveR(); if(R.never) return;
+  const day=864e5, since=Date.now()-R.last;
+  const ok = R.last===0 ? R.scans>=3 : R.done ? (since>30*day && R.scans>=5) : (since>day && R.scans>=5);
+  if(ok) setTimeout(()=>{ if(!busy){ R.last=Date.now(); R.scans=0; R.done=false; saveR(); rate(true); } },1800);
+}
+$("rateBtn").onclick=openMyket;
+$("rGo").onclick=()=>{ rate(false); openMyket(); };
+$("rLater").onclick=()=>rate(false);
+$("rNever").onclick=()=>{ R.never=true; saveR(); rate(false); };
+
+/* ---------- accuracy training (سن واقعی) ---------- */
+$("trueBtn").onclick=()=>{
+  const val=+$("trueAge").value; if(!(val>=1 && val<=110) || lastRaw==null) return;
+  const near=CP.find(q=>Math.abs(q.r-lastRaw)<1.5);
+  if(near){ near.r=(near.r+lastRaw)/2; near.t=(near.t+val)/2; } else CP.push({r:lastRaw,t:val});
+  saveCP(); $("trueMsg").textContent=t("saved"); $("trueAge").value=""; renderSettings();
+};
+$("learnReset").onclick=()=>{ CP=[]; saveCP(); renderSettings(); };
+
+btn.onclick = scan;
+applyLang();
+</script>
+</body>
+</html>
