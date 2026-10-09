@@ -309,6 +309,7 @@ function chip(id,txt,cls){ const e=$(id), k="chip "+(cls||""); if(e.textContent!
    مدل B: Human / faceres  → تشخیص چهره، مش ۴۶۸ نقطه‌ای، زاویه‌ی سر و سن
    مدل A: face-api ageGenderNet → سن روی چهره‌ی هم‌تراز شده (۳ حالت: اصلی، آینه، زوم)
    نتیجه: میانگین دو مدل بعد از تصحیح + کیفیت‌سنجی هر فریم + توقف خودکار */
+const WA=0.75, WB=0.25;   // وزن مدل A و B در نتیجه‌ی نهایی (موقت، تا تست‌های بیشتر)
 const OUT=112, TARGET=30, MIN_OK=12, MAX_MS=40000, GIVEUP_MS=9000;
 const mk = () => { const k=document.createElement("canvas"); k.width=k.height=OUT; return k; };
 const ac=mk(), fc=mk(), zc=mk();
@@ -449,7 +450,7 @@ async function scan(){
   const sb=smp.filter(x=>isFinite(x.b)).map(x=>({a:x.b,w:x.w}));
   const eB=sb.length>=MIN_OK?estimate(sb):null;
   const cA=calA(eA.mean), cB=eB?eB.mean:null;
-  const ens=cB==null?cA:(cA+cB)/2, diff=cB==null?0:Math.abs(cA-cB);
+  const ens=cB==null?cA:(cA*WA+cB*WB), diff=cB==null?0:Math.abs(cA-cB);
   lastRaw=ens; $("trueMsg").textContent="";
   const age=Math.round(calibrate(ens)), sd=Math.max(eA.sd, eB?eB.sd:0);
   const sp=Math.max(2, Math.round(sd*1.2 + (age>40?4:3) + diff*0.35));
