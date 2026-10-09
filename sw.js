@@ -1,10 +1,10 @@
 // Mineage service worker: caches everything after the first visit so the app works offline.
 const V = "mineage-v2";
-const CORE = ["./", "./index.html", "./manifest.json", "./lib/face-api.js", "./lib/human.js",
-  "./models/face/age_gender_model.json", "./models/face/age_gender_model.bin",
-  "./models/human/blazeface.json", "./models/human/blazeface.bin",
-  "./models/human/facemesh.json", "./models/human/facemesh.bin",
-  "./models/human/faceres.json", "./models/human/faceres.bin"];
+const CORE = ["./", "./index.html", "./manifest.json", "./face-api.js", "./human.js",
+  "./age_gender_model.json", "./age_gender_model.bin",
+  "./blazeface.json", "./blazeface.bin",
+  "./facemesh.json", "./facemesh.bin",
+  "./faceres.json", "./faceres.bin"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(V).then(c => Promise.all(CORE.map(u => c.add(u).catch(() => {})))).then(() => self.skipWaiting()));
 });

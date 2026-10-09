@@ -5,7 +5,7 @@
 <pre id="o" style="white-space:pre-wrap;word-break:break-all;direction:ltr;text-align:left;font-size:12px"></pre>
 <script>
 const o=document.getElementById("o"), log=m=>{ o.textContent+=m+"\n"; };
-const F=["lib/face-api.js","lib/human.js","models/face/age_gender_model.json","models/face/age_gender_model.bin","models/human/blazeface.json","models/human/blazeface.bin","models/human/facemesh.json","models/human/facemesh.bin","models/human/faceres.json","models/human/faceres.bin","sw.js","manifest.json"];
+const F=["face-api.js","human.js","age_gender_model.json","age_gender_model.bin","blazeface.json","blazeface.bin","facemesh.json","facemesh.bin","faceres.json","faceres.bin","sw.js","manifest.json"];
 const ld=src=>new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("script load failed")); document.head.appendChild(s); });
 (async()=>{
   log("page: "+location.href);
@@ -14,11 +14,11 @@ const ld=src=>new Promise((res,rej)=>{ const s=document.createElement("script");
       log((r.ok&&b.byteLength>500&&!/html/.test(t)?"OK   ":"FAIL ")+f+"  status="+r.status+"  size="+b.byteLength+"  type="+t);
     }catch(e){ log("FAIL "+f+"  "+e.message); }
   }
-  try{ await ld("lib/face-api.js"); log("OK   face-api.js runs: faceapi="+typeof faceapi); }catch(e){ log("FAIL face-api.js: "+e.message); }
-  try{ await ld("lib/human.js"); log("OK   human.js runs: Human="+typeof Human); }catch(e){ log("FAIL human.js: "+e.message); }
-  try{ await faceapi.nets.ageGenderNet.loadFromUri(new URL("models/face",location.href).href); log("OK   model A loaded"); }catch(e){ log("FAIL model A: "+(e&&e.message||e)); }
+  try{ await ld("face-api.js"); log("OK   face-api.js runs: faceapi="+typeof faceapi); }catch(e){ log("FAIL face-api.js: "+e.message); }
+  try{ await ld("human.js"); log("OK   human.js runs: Human="+typeof Human); }catch(e){ log("FAIL human.js: "+e.message); }
+  try{ await faceapi.nets.ageGenderNet.loadFromUri(new URL("./",location.href).href); log("OK   model A loaded"); }catch(e){ log("FAIL model A: "+(e&&e.message||e)); }
   try{
-    const h=new Human.Human({modelBasePath:new URL("models/human/",location.href).href,backend:"webgl",face:{enabled:true,detector:{rotation:false},mesh:{enabled:true},iris:{enabled:false},attention:{enabled:false},description:{enabled:true},emotion:{enabled:false},antispoof:{enabled:false},liveness:{enabled:false}},body:{enabled:false},hand:{enabled:false},object:{enabled:false},gesture:{enabled:false},segmentation:{enabled:false}});
+    const h=new Human.Human({modelBasePath:new URL("./",location.href).href,backend:"webgl",face:{enabled:true,detector:{rotation:false},mesh:{enabled:true},iris:{enabled:false},attention:{enabled:false},description:{enabled:true},emotion:{enabled:false},antispoof:{enabled:false},liveness:{enabled:false}},body:{enabled:false},hand:{enabled:false},object:{enabled:false},gesture:{enabled:false},segmentation:{enabled:false}});
     await h.load(); log("OK   Human loaded, version="+h.version);
     const c=document.createElement("canvas"); c.width=c.height=256; const r=await h.detect(c); log("OK   Human detect ran, faces="+r.face.length);
   }catch(e){ log("FAIL model B / Human: "+(e&&e.message||e)); }

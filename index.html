@@ -174,16 +174,16 @@ input[type=range]{width:100%;margin-top:12px;accent-color:var(--a)}
 <script>
 /* --- آفلاین: اول از فایل‌های خود سایت (lib/ و models/)، و فقط اگر نبود از CDN --- */
 const abs = p => new URL(p, location.href).href;
-const FA_LOCAL=abs("models/face"), FA_CDN="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model";
-const HU_LOCAL=abs("models/human/"), HU_CDN="https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/models/";
+const FA_LOCAL=abs("./"), FA_CDN="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model";
+const HU_LOCAL=abs("./"), HU_CDN="https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/models/";
 let dbg="";
 function loadScript(list){
   const tried=[];
   return list.reduce((p,src)=>p.catch(()=>new Promise((res,rej)=>{ const e=document.createElement("script"); e.src=src; e.onload=res; e.onerror=()=>{ e.remove(); tried.push(src); rej(new Error("script failed: "+tried.join(" | "))); }; document.head.appendChild(e); })), Promise.reject());
 }
 const libsP=Promise.all([
-  loadScript(["lib/face-api.js","https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js"]),
-  loadScript(["lib/human.js","https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/dist/human.js"])
+  loadScript(["face-api.js","https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js"]),
+  loadScript(["human.js","https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/dist/human.js"])
 ]);
 libsP.catch(()=>{});
 if("serviceWorker" in navigator) addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
