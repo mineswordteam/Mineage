@@ -269,6 +269,8 @@ async function loadModels(){
   if(modelsOK) return;
   try{ await libsP; }catch(e){ throw new Error("LIB: "+(e&&e.message||e)); }
   try{ faceapi.tf.enableProdMode(); }catch(e){}
+  try{ await faceapi.tf.setBackend("webgl"); }catch(e){ try{ await faceapi.tf.setBackend("cpu"); }catch(e2){} }
+  try{ await faceapi.tf.ready(); }catch(e){}
   const errs=[]; let ok=false;
   for(const b of [FA_LOCAL,FA_CDN]){ try{ await faceapi.nets.ageGenderNet.loadFromUri(b); ok=true; break; }catch(e){ errs.push("A "+b+" -> "+(e&&e.message||e)); } }
   if(!ok) throw new Error(errs.join("\n"));
