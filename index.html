@@ -147,6 +147,8 @@ input[type=range]{width:100%;margin-top:12px;accent-color:var(--a)}
     <div class="note" data-t="disc">این عدد یک تخمین هوش مصنوعی است و ممکن است چند سال خطا داشته باشد.</div>
   </div>
 
+  <pre class="card" id="batch" style="display:none;white-space:pre-wrap;word-break:break-all;font-size:12px;line-height:1.8;direction:ltr;text-align:left"></pre>
+
   <div class="card">
     <div class="hh"><span data-t="hist">تاریخچه‌ی اسکن‌ها</span><button id="clr" data-t="clear">پاک کردن</button></div>
     <div id="hist"></div>
@@ -166,6 +168,7 @@ input[type=range]{width:100%;margin-top:12px;accent-color:var(--a)}
   <div class="set"><label><span data-t="vib">لرزش پس از اسکن</span><span class="sw"><input type="checkbox" id="sVib"><i></i></span></label></div>
 
   <div class="set"><label><span data-t="learn">آموزش دقت</span><span id="learnN">0</span></label><small data-t="learnD"></small><div class="seg"><button id="learnReset" data-t="learnR"></button></div></div>
+  <div class="set"><label><span data-t="bat">کالیبراسیون با عکس‌ها</span></label><small data-t="batD"></small><div class="seg"><button id="batBtn" data-t="batB"></button></div><input type="file" id="bfile" accept="image/*" multiple hidden></div>
   <div class="set"><label><span data-t="exp">اطلاعات تست‌ها</span><span id="logN">0</span></label><small data-t="expD"></small><div class="seg"><button id="expBtn" data-t="expB"></button></div></div>
   <div class="set"><label><span data-t="lang">زبان</span></label>
     <div class="seg" id="sLang"><button data-v="fa">فارسی</button><button data-v="en">English</button></div></div>
@@ -191,7 +194,7 @@ const libsP=Promise.all([
 ]);
 libsP.catch(()=>{});
 if("serviceWorker" in navigator) addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
-const CALIB = [[3,2],[16,15],[27,27],[44,52],[58,69],[70,80]];   // [سن خام مدل A, سن واقعی] - بر اساس تست‌های واقعی
+const CALIB = [[3,2],[16,15],[27,27],[41,52],[55,67],[68,80]];   // [سن خام مدل A, سن واقعی] - بر اساس تست‌های واقعی
 const MIN_SAMPLES = 15;
 const L = {
  fa:{tag:"ماین اج • اسکنر سن چهره",ph:"دوربین هنوز فعال نیست",idle:"برای شروع، دکمه‌ی اسکن را بزنید.",start:"شروع اسکن صورت",again:"اسکن دوباره",scanning:"اسکن...",
@@ -201,7 +204,7 @@ const L = {
   load:"در حال آماده‌سازی دوربین و مدل‌ها…",camErr:"ایرادی وجود دارد: دسترسی به دوربین ممکن نیست. اجازه‌ی دوربین را بدهید.",
   hold:"صورت خود را داخل کادر و روبه‌روی دوربین نگه دارید…",s1:"در حال اسکن دقیق صورت…",s2:"در حال تحلیل ویژگی‌های چهره…",s3:"در حال محاسبه‌ی سن تقریبی…",
   noFace:"صورت شناسایی نشد؛ روبه‌روی دوربین و در نور کافی قرار بگیرید.",fail:"ایرادی وجود دارد: صورت شناسایی نشد. دوباره تلاش کنید.",ok:"اسکن با موفقیت انجام شد ✓",
-  year:"سال",range:"بازه‌ی تقریبی",to:"تا",none:"هنوز اسکنی انجام نشده.",light:"نور",dist:"فاصله",low:"کم",good:"خوب",hi:"زیاد",near:"نزدیک",far:"دور",okd:"مناسب",pose:"حالت",photo:"🖼 تشخیص سن از عکس",analyzing:"در حال تحلیل عکس…",photoFail:"ایرادی وجود دارد: صورت شناسایی نشد. عکسی واضح و روبه‌روی صورت انتخاب کنید.",small:"چهره در عکس خیلی کوچک است؛ عکسی نزدیک‌تر انتخاب کنید.",exp:"اطلاعات تست‌ها",expD:"بعد از هر تست که سن واقعی را ثبت می‌کنید، اینجا ذخیره می‌شود. با دکمه‌ی زیر کپی کنید و برای تنظیم دقت بفرستید.",expB:"کپی اطلاعات تست‌ها",copied:"کپی شد ✓",netErr:"ایرادی وجود دارد: بارگذاری مدل‌ها ناموفق بود. اینترنت را بررسی کنید.",rate:"⭐ ثبت نظر در مایکت",rtitle:"از ماین اج راضی هستید؟",rdesc:"نظر شما در مایکت به ما کمک می‌کند برنامه را دقیق‌تر و بهتر کنیم.",rgo:"ثبت نظر در مایکت",rlater:"بعداً",rnever:"دیگر نمایش نده",truth:"سن واقعی این فرد را می‌دانید؟ وارد کنید تا برنامه دقیق‌تر شود:",save:"ثبت",saved:"ثبت شد ✓ دفعه‌ی بعد دقیق‌تر است.",learn:"آموزش دقت",learnD:"تعداد نمونه‌های واقعی که برنامه روی همین دستگاه یاد گرفته است.",learnR:"پاک کردن آموزش دقت",h_look:"مستقیم به دوربین نگاه کنید.",h_closer:"کمی نزدیک‌تر شوید.",h_far:"کمی دورتر شوید.",h_turn:"صورت را صاف و روبه‌روی دوربین نگه دارید.",h_still:"ثابت بمانید.",h_dark:"نور کافی نیست؛ به جای روشن‌تر بروید.",h_bright:"نور بیش‌ازحد زیاد است؛ از نور مستقیم دور شوید.",h_blur:"تصویر محو است؛ ثابت بمانید."},
+  year:"سال",range:"بازه‌ی تقریبی",to:"تا",none:"هنوز اسکنی انجام نشده.",light:"نور",dist:"فاصله",low:"کم",good:"خوب",hi:"زیاد",near:"نزدیک",far:"دور",okd:"مناسب",pose:"حالت",bat:"کالیبراسیون با عکس‌ها",batD:"چند عکس انتخاب کنید که سن واقعی‌شان را می‌دانید. اگر اسم فایل فقط یک عدد سن باشد (مثل 52.jpg) همان خوانده می‌شود، وگرنه برنامه سن را می‌پرسد. برنامه خطا را نشان می‌دهد و از آن‌ها یاد می‌گیرد.",batB:"انتخاب عکس‌ها",askAge:"سن واقعی این فرد چند سال است؟",noFaceShort:"صورت پیدا نشد",photo:"🖼 تشخیص سن از عکس",analyzing:"در حال تحلیل عکس…",photoFail:"ایرادی وجود دارد: صورت شناسایی نشد. عکسی واضح و روبه‌روی صورت انتخاب کنید.",small:"چهره در عکس خیلی کوچک است؛ عکسی نزدیک‌تر انتخاب کنید.",exp:"اطلاعات تست‌ها",expD:"بعد از هر تست که سن واقعی را ثبت می‌کنید، اینجا ذخیره می‌شود. با دکمه‌ی زیر کپی کنید و برای تنظیم دقت بفرستید.",expB:"کپی اطلاعات تست‌ها",copied:"کپی شد ✓",netErr:"ایرادی وجود دارد: بارگذاری مدل‌ها ناموفق بود. اینترنت را بررسی کنید.",rate:"⭐ ثبت نظر در مایکت",rtitle:"از ماین اج راضی هستید؟",rdesc:"نظر شما در مایکت به ما کمک می‌کند برنامه را دقیق‌تر و بهتر کنیم.",rgo:"ثبت نظر در مایکت",rlater:"بعداً",rnever:"دیگر نمایش نده",truth:"سن واقعی این فرد را می‌دانید؟ وارد کنید تا برنامه دقیق‌تر شود:",save:"ثبت",saved:"ثبت شد ✓ دفعه‌ی بعد دقیق‌تر است.",learn:"آموزش دقت",learnD:"تعداد نمونه‌های واقعی که برنامه روی همین دستگاه یاد گرفته است.",learnR:"پاک کردن آموزش دقت",h_look:"مستقیم به دوربین نگاه کنید.",h_closer:"کمی نزدیک‌تر شوید.",h_far:"کمی دورتر شوید.",h_turn:"صورت را صاف و روبه‌روی دوربین نگه دارید.",h_still:"ثابت بمانید.",h_dark:"نور کافی نیست؛ به جای روشن‌تر بروید.",h_bright:"نور بیش‌ازحد زیاد است؛ از نور مستقیم دور شوید.",h_blur:"تصویر محو است؛ ثابت بمانید."},
  en:{tag:"FACE AGE SCANNER • BY MINESWORD TEAM",ph:"Camera is not active",idle:"Press the button to start scanning.",start:"Start face scan",again:"Scan again",scanning:"Scanning...",
   conf:"Confidence",disc:"This is an AI estimate and may be off by a few years.",hist:"Scan history",clear:"Clear",
   settings:"Settings",dur:"Scan duration",durD:"Longer scans collect more samples for a steadier result.",sens:"Face detection strictness",sensD:"Higher is stricter; only clearly visible faces are accepted.",
@@ -209,7 +212,7 @@ const L = {
   load:"Preparing camera and models…",camErr:"There is a problem: camera access is not possible. Please allow camera permission.",
   hold:"Keep your face inside the frame, facing the camera…",s1:"Scanning the face in detail…",s2:"Analyzing facial features…",s3:"Calculating approximate age…",
   noFace:"Face not detected; face the camera in good light.",fail:"There is a problem: face not detected. Please try again.",ok:"Scan completed ✓",
-  year:"years",range:"Approx. range",to:"to",none:"No scans yet.",light:"LIGHT",dist:"DIST",low:"LOW",good:"GOOD",hi:"HIGH",near:"NEAR",far:"FAR",okd:"OK",pose:"POSE",photo:"🖼 Detect age from a photo",analyzing:"Analyzing the photo…",photoFail:"There is a problem: face not detected. Choose a clear photo facing the camera.",small:"The face in the photo is too small; choose a closer photo.",exp:"Test data",expD:"Saved every time you enter a real age after a scan. Copy it with the button below and send it to tune accuracy.",expB:"Copy test data",copied:"Copied ✓",netErr:"There is a problem: models failed to load. Check your internet.",rate:"⭐ Rate on Myket",rtitle:"Enjoying Mineage?",rdesc:"Your review on Myket helps us make the app better and more accurate.",rgo:"Rate on Myket",rlater:"Later",rnever:"Don't show again",truth:"Know this person's real age? Enter it to make the app more accurate:",save:"Save",saved:"Saved ✓ Next time will be more accurate.",learn:"Accuracy training",learnD:"Number of real samples learned on this device.",learnR:"Reset accuracy training",h_look:"Look straight at the camera.",h_closer:"Move a little closer.",h_far:"Move a little farther.",h_turn:"Keep your face straight toward the camera.",h_still:"Hold still.",h_dark:"Not enough light; move somewhere brighter.",h_bright:"Too bright; avoid direct light.",h_blur:"Image is blurry; hold still."}
+  year:"years",range:"Approx. range",to:"to",none:"No scans yet.",light:"LIGHT",dist:"DIST",low:"LOW",good:"GOOD",hi:"HIGH",near:"NEAR",far:"FAR",okd:"OK",pose:"POSE",bat:"Calibrate with photos",batD:"Pick photos of people whose real age you know. A file name that is just an age number (e.g. 52.jpg) is read automatically, otherwise the app asks. It shows the error and learns from them.",batB:"Choose photos",askAge:"Real age of this person?",noFaceShort:"face not found",photo:"🖼 Detect age from a photo",analyzing:"Analyzing the photo…",photoFail:"There is a problem: face not detected. Choose a clear photo facing the camera.",small:"The face in the photo is too small; choose a closer photo.",exp:"Test data",expD:"Saved every time you enter a real age after a scan. Copy it with the button below and send it to tune accuracy.",expB:"Copy test data",copied:"Copied ✓",netErr:"There is a problem: models failed to load. Check your internet.",rate:"⭐ Rate on Myket",rtitle:"Enjoying Mineage?",rdesc:"Your review on Myket helps us make the app better and more accurate.",rgo:"Rate on Myket",rlater:"Later",rnever:"Don't show again",truth:"Know this person's real age? Enter it to make the app more accurate:",save:"Save",saved:"Saved ✓ Next time will be more accurate.",learn:"Accuracy training",learnD:"Number of real samples learned on this device.",learnR:"Reset accuracy training",h_look:"Look straight at the camera.",h_closer:"Move a little closer.",h_far:"Move a little farther.",h_turn:"Keep your face straight toward the camera.",h_still:"Hold still.",h_dark:"Not enough light; move somewhere brighter.",h_bright:"Too bright; avoid direct light.",h_blur:"Image is blurry; hold still."}
 };
 const $ = id => document.getElementById(id);
 const v=$("v"), c=$("c"), st=$("status"), btn=$("btn"), pb=$("pb");
@@ -417,7 +420,7 @@ async function scan(){
     if(score<0.6) hint="h_look";
     else if(ratio<0.24) hint="h_closer";
     else if(ratio>0.8) hint="h_far";
-    else if(yawDev>0.35 || Math.abs(rot.pitch||0)>0.4 || Math.abs(rot.roll||0)>0.5) hint="h_turn";
+    else if(yawDev>0.25 || Math.abs(rot.pitch||0)>0.3 || Math.abs(rot.roll||0)>0.35) hint="h_turn";
     else if(shift>0.12) hint="h_still";
 
     const eyes=eyePts(f.mesh); let st2=null;
@@ -429,17 +432,18 @@ async function scan(){
       else if(smp.length>4 && st2.lap<bestLap*0.25) hint="h_blur";
     }
     chip("hDist", t("dist")+" "+(ratio<.24?t("far"):ratio>.8?t("near"):t("okd")), ratio<.24||ratio>.8?"warn":"ok");
-    chip("hFps", t("pose")+" "+(yawDev<=.35&&!hint?t("okd"):"--"), hint?"warn":"ok");
+    chip("hFps", t("pose")+" "+(yawDev<=.25&&!hint?t("okd"):"--"), hint?"warn":"ok");
     const mt=meshTarget(f);
     tgt={ b, p:mt.p, g:mt.g, good:!hint, t:performance.now() };
 
     if(hint){ say("⚠ "+t(hint)); await raf(); continue; }
 
     // مدل A روی سه نسخه‌ی چهره‌ی هم‌تراز شده
-    fcx.setTransform(-1,0,0,1,OUT,0); fcx.drawImage(ac,0,0); fcx.setTransform(1,0,0,1,0,0);
-    drawAligned(zcx, eyes, 1.12);
-    const out = await net.predictAgeAndGender([ac,fc,zc]); const [p1,p2,p3] = Array.isArray(out) ? out : [out,out,out];
-    const a = p1.age*0.4 + p2.age*0.3 + p3.age*0.3;
+    const zs=[1,1.1,0.94];
+    VC.forEach((kv,i)=>drawAligned(kv.getContext("2d"), eyes, zs[i%3], i>=3));
+    const out = await net.predictAgeAndGender(VC);
+    const arr = (Array.isArray(out)?out:[out]).map(o=>o.age).filter(isFinite);
+    const a = arr.length ? arr.reduce((x,y)=>x+y,0)/arr.length : NaN;
     const w = clamp(st2.lap/bestLap, 0.3, 1) * (1 - Math.min(yawDev,0.3)*2) * score;
     if(isFinite(a)) smp.push({a, b:(typeof f.age==="number"&&isFinite(f.age)&&f.age>0)?f.age:NaN, w:Math.max(0.05,w)});
     say((p<.4?t("s1"):p<.75?t("s2"):t("s3")) + "  " + smp.length + "/" + TARGET);
@@ -535,6 +539,59 @@ async function scanPhoto(file){
   done();
   $("result").scrollIntoView({behavior:"smooth", block:"center"});
 }
+/* ---------- کالیبراسیون با چند عکس (اسم فایل = سن، یا پرسیدن سن) ---------- */
+function learn(cA,a,b,val){
+  const near=CP.find(q=>Math.abs(q.r-cA)<1.5);
+  if(near){ near.r=(near.r+cA)/2; near.t=(near.t+val)/2; } else CP.push({r:cA,t:val});
+  LOG.push({a:+a.toFixed(1), b:(b==null?null:+b.toFixed(1)), t:val}); saveLog(); saveCP();
+}
+async function loadBmp(file){
+  try{ return await createImageBitmap(file); }
+  catch(e){ return await new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=URL.createObjectURL(file); }); }
+}
+async function analyzeCanvas(cv){
+  SRC=cv;
+  try{
+    const res=await human.detect(cv), f=res&&res.face&&res.face[0];
+    if(!f || !f.mesh || f.mesh.length<468 || f.box[2]<70) return null;
+    const eyes=eyePts(f.mesh), zs=[1,1.1,0.94];
+    VC.forEach((kv,i)=>drawAligned(kv.getContext("2d"), eyes, zs[i%3], i>=3));
+    const out=await faceapi.nets.ageGenderNet.predictAgeAndGender(VC);
+    const ages=(Array.isArray(out)?out:[out]).map(o=>o.age).filter(isFinite);
+    if(!ages.length) return null;
+    return { a:ages.reduce((x,y)=>x+y,0)/ages.length, b:(typeof f.age==="number"&&isFinite(f.age)&&f.age>0)?f.age:null };
+  } finally { SRC=null; }
+}
+async function batchCalib(files){
+  if(busy||!files.length) return;
+  busy=true; btn.disabled=true;
+  const box=$("batch"); box.style.display="block"; box.textContent=t("analyzing")+"\n";
+  const me=await loadModels().then(()=>0,e=>{ dbg=String(e&&e.message||e).slice(0,300); return 1; });
+  if(me){ box.textContent=t("netErr")+"\n"+dbg; busy=false; btn.disabled=false; return; }
+  const rows=[]; let sum=0, n=0;
+  for(const file of files){
+    let truth=null; const nums=file.name.match(/\d+/g)||[];
+    if(nums.length===1 && nums[0].length<=3 && +nums[0]>=1 && +nums[0]<=100) truth=+nums[0];
+    let bmp; try{ bmp=await loadBmp(file); }catch(e){ rows.push(file.name+": x"); box.textContent=rows.join("\n"); continue; }
+    const W0=bmp.width||bmp.naturalWidth, H0=bmp.height||bmp.naturalHeight, k=Math.min(1,1280/Math.max(W0,H0));
+    const cv=document.createElement("canvas"); cv.width=Math.round(W0*k); cv.height=Math.round(H0*k);
+    cv.getContext("2d").drawImage(bmp,0,0,cv.width,cv.height);
+    const pc=$("pcv"); photoMode(true); pc.width=cv.width; pc.height=cv.height; pc.getContext("2d").drawImage(cv,0,0);
+    if(truth==null){ await raf(); const x=+prompt(t("askAge")+"  ("+file.name+")"); if(x>=1 && x<=100) truth=x; }
+    const r=await analyzeCanvas(cv);
+    if(!r){ rows.push(file.name+": "+t("noFaceShort")); box.textContent=rows.join("\n"); continue; }
+    const cA=calA(r.a);
+    if(truth!=null){
+      const err=cA-truth; sum+=Math.abs(err); n++; learn(cA,r.a,r.b,truth);
+      rows.push(file.name+" | A "+Math.round(r.a)+"→"+Math.round(cA)+(r.b!=null?" | B "+Math.round(r.b):"")+" | real "+truth+" | err "+(err>=0?"+":"")+Math.round(err));
+    } else rows.push(file.name+" | A "+Math.round(r.a)+"→"+Math.round(cA));
+    box.textContent=rows.join("\n");
+  }
+  if(n) rows.push("MAE = "+(sum/n).toFixed(1)+"  (n="+n+")");
+  box.textContent=rows.join("\n"); renderSettings(); busy=false; btn.disabled=false;
+}
+$("batBtn").onclick=()=>{ if(!busy){ sheet(false); $("bfile").click(); } };
+$("bfile").onchange=e=>{ const fs=[...e.target.files]; e.target.value=""; batchCalib(fs); };
 $("photoBtn").onclick=()=>{ if(!busy) $("pfile").click(); };
 $("pfile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; scanPhoto(f); };
 
