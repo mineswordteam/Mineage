@@ -274,6 +274,8 @@ const HCFG={
   body:{enabled:false}, hand:{enabled:false}, object:{enabled:false}, gesture:{enabled:false}, segmentation:{enabled:false}
 };
 let human=null;
+const ATT={on:false};
+async function exists(u){ try{ const r=await fetch(u,{method:"HEAD",cache:"no-store"}); return r.ok; }catch(e){ return false; } }
 async function loadModels(){
   if(modelsOK) return;
   try{ await libsP; }catch(e){ throw new Error("LIB: "+(e&&e.message||e)); }
@@ -285,7 +287,12 @@ async function loadModels(){
   if(!ok) throw new Error(errs.join("\n"));
   if(!human){
     ok=false;
-    for(const b of [HU_LOCAL,HU_CDN]){ try{ const h=new Human.Human({...HCFG, modelBasePath:b}); await h.load(); human=h; ok=true; break; }catch(e){ errs.push("B "+b+" -> "+(e&&e.message||e)); } }
+    const att = (await exists(HU_LOCAL+"facemesh-attention.json")) && (await exists(HU_LOCAL+"facemesh-attention.bin"));
+    for(const b of [HU_LOCAL,HU_CDN]){
+      const useAtt = att && b===HU_LOCAL;
+      try{ const h=new Human.Human({...HCFG, modelBasePath:b, face:{...HCFG.face, attention:{enabled:useAtt}}}); await h.load(); human=h; ATT.on=useAtt; ok=true; break; }
+      catch(e){ errs.push("B "+b+" -> "+(e&&e.message||e)); }
+    }
     if(!ok) throw new Error(errs.join("\n"));
   }
   modelsOK=true;
@@ -349,12 +356,39 @@ function cropStats(){
 }
 
 /* رسم چهره: کادر، خطوط اجزای صورت و نقطه‌های مش */
-const GK=["silhouette","leftEyebrowUpper","rightEyebrowUpper","leftEyeUpper0","leftEyeLower0","rightEyeUpper0","rightEyeLower0","lipsUpperOuter","lipsLowerOuter","midwayBetweenEyes","noseBottom"];
+const GK=["silhouette","leftEyebrowUpper","rightEyebrowUpper","leftEyeUpper0","leftEyeLower0","rightEyeUpper0","rightEyeLower0","leftEyeUpper1","leftEyeLower1","rightEyeUpper1","rightEyeLower1","lipsUpperOuter","lipsLowerOuter","lipsUpperInner","lipsLowerInner","midwayBetweenEyes","noseBottom"];
 function meshTarget(f){
-  const p=[], g=[], a=f.annotations||{};
-  for(const k of GK){ const q=a[k]; if(!q||!q.length) continue; const s=p.length; q.forEach(z=>p.push({x:z[0],y:z[1]})); g.push([s,p.length-1]); }
-  for(let i=0;i<468;i+=9) p.push({x:f.mesh[i][0], y:f.mesh[i][1]});
-  return {p,g};
+  const p=[], g=[], kk=[], a=f.annotations||{};
+  for(const k of GK){
+    const q=a[k]; if(!q||!q.length) continue;
+    const st=p.length, fast=/Eye|lips/.test(k)?0.7:0.25;     // چشم و لب سریع‌تر دنبال می‌شوند تا باز و بسته شدن دیده شود
+    q.forEach(z=>{ p.push({x:z[0],y:z[1],r:0}); kk.push(fast); }); g.push([st,p.length-1]);
+  }
+  for(let i=0;i<468;i+=9){ p.push({x:f.mesh[i][0], y:f.mesh[i][1], r:0}); kk.push(0.25); }
+  if(f.mesh.length>=478){                                   // مدل attention: مردمک چشم هم موجود است
+    for(const i of [468,473]){
+      const c0=f.mesh[i]; let r=0; for(let j=1;j<=4;j++){ const q=f.mesh[i+j]; r+=Math.hypot(q[0]-c0[0],q[1]-c0[1]); }
+      p.push({x:c0[0],y:c0[1],r:r/4}); kk.push(0.7);
+    }
+  }
+  return {p,g,kk};
+}
+function eyeMetrics(m){
+  const d=(i,j)=>Math.hypot(m[i][0]-m[j][0], m[i][1]-m[j][1]);
+  const mkEye=(c1,c2,up,lo)=>({ cx:(m[c1][0]+m[c2][0])/2, cy:(m[c1][1]+m[c2][1])/2, w:d(c1,c2), ang:Math.atan2(m[c2][1]-m[c1][1],m[c2][0]-m[c1][0]), ear:d(up,lo)/Math.max(1,d(c1,c2)) });
+  return [ mkEye(33,133,159,145), mkEye(362,263,386,374) ];     // چشم راست و چپ: مرکز، عرض، زاویه، میزان باز بودن پلک
+}
+function drawEyes(ctx,eyes,t){
+  eyes.forEach(e=>{
+    const rx=e.w*0.95, ry=rx*Math.max(0.22,Math.min(1,0.15+2.2*e.ear));   // بسته → بیضی باریک، باز → دایره
+    ctx.save(); ctx.translate(e.cx,e.cy); ctx.rotate(e.ang); ctx.strokeStyle="#4d8bff"; ctx.lineCap="round";
+    const a0=ctx.globalAlpha;
+    ctx.globalAlpha=a0*.2; ctx.lineWidth=8; ctx.beginPath(); ctx.ellipse(0,0,rx,ry,0,0,6.3); ctx.stroke();      // درخشش
+    ctx.globalAlpha=a0; ctx.lineWidth=2.5; ctx.beginPath(); ctx.ellipse(0,0,rx,ry,0,0,6.3); ctx.stroke();       // حلقه‌ی اصلی
+    ctx.lineWidth=1.5; ctx.setLineDash([7,9]); ctx.lineDashOffset=-t/35;                                          // حلقه‌ی بیرونی چرخان
+    ctx.beginPath(); ctx.ellipse(0,0,rx*1.32,ry*1.32+rx*0.06,0,0,6.3); ctx.stroke();
+    ctx.restore();
+  });
 }
 function drawFace(ctx,p,g,b,good,fade=1){
   const col = good ? "#4df0c0" : "#ffc857", k=Math.max(14,b.width*.12);
@@ -363,7 +397,8 @@ function drawFace(ctx,p,g,b,good,fade=1){
     ctx.beginPath(); ctx.moveTo(x+dx*k,y); ctx.lineTo(x,y); ctx.lineTo(x,y+dy*k); ctx.stroke(); });
   ctx.lineWidth=1.5; ctx.globalAlpha=.65*fade;
   g.forEach(([a,z])=>{ ctx.beginPath(); ctx.moveTo(p[a].x,p[a].y); for(let i=a+1;i<=z;i++) ctx.lineTo(p[i].x,p[i].y); ctx.stroke(); });
-  ctx.fillStyle=col; ctx.beginPath(); p.forEach(q=>{ ctx.moveTo(q.x+2,q.y); ctx.arc(q.x,q.y,2,0,6.3); }); ctx.fill();
+  ctx.fillStyle=col; ctx.beginPath(); p.forEach(q=>{ if(!q.r){ ctx.moveTo(q.x+2,q.y); ctx.arc(q.x,q.y,2,0,6.3); } }); ctx.fill();
+  ctx.lineWidth=2; p.forEach(q=>{ if(q.r){ ctx.beginPath(); ctx.arc(q.x,q.y,q.r,0,6.3); ctx.stroke(); } });
   ctx.globalAlpha=1;
 }
 let tgt=null, cur=null, drawing=false, runId=0;
@@ -386,14 +421,19 @@ function renderLoop(id){                 // رندر ۶۰fps جدا از تشخ�
     if(now-tgt.t<900) tgt.boxes.forEach(b=>drawPick(octx,b));
     cur=null;
   } else if(tgt && now-tgt.t<1600){
-    if(!cur || cur.p.length!==tgt.p.length) cur={ b:{...tgt.b}, p:tgt.p.map(q=>({x:q.x,y:q.y})) };
+    if(!cur || cur.p.length!==tgt.p.length) cur={ b:{...tgt.b}, p:tgt.p.map(q=>({x:q.x,y:q.y,r:q.r||0})) };
     else {
       const k=0.25;
       for(const key of ["x","y","width","height"]) cur.b[key]+=(tgt.b[key]-cur.b[key])*k;
-      cur.p.forEach((q,i)=>{ q.x+=(tgt.p[i].x-q.x)*k; q.y+=(tgt.p[i].y-q.y)*k; });
+      cur.p.forEach((q,i)=>{ const kp=(tgt.kk&&tgt.kk[i])||k; q.x+=(tgt.p[i].x-q.x)*kp; q.y+=(tgt.p[i].y-q.y)*kp; q.r+=((tgt.p[i].r||0)-q.r)*kp; });
     }
-    const age=now-tgt.t;
-    drawFace(octx,cur.p,tgt.g,cur.b,tgt.good, age<900?1:Math.max(0,1-(age-900)/700));
+    const age=now-tgt.t, fade=age<900?1:Math.max(0,1-(age-900)/700);
+    drawFace(octx,cur.p,tgt.g,cur.b,tgt.good,fade);
+    if(tgt.eyes){
+      if(!cur.eyes) cur.eyes=tgt.eyes.map(e=>({...e}));
+      else tgt.eyes.forEach((e,i)=>{ const q=cur.eyes[i]; for(const key of ["cx","cy","w","ang","ear"]) q[key]+=(e[key]-q[key])*0.55; });
+      octx.globalAlpha=fade; drawEyes(octx,cur.eyes,now); octx.globalAlpha=1;
+    }
   } else cur=null;
   requestAnimationFrame(()=>renderLoop(id));
 }
@@ -438,7 +478,7 @@ async function trackLoop(id){            // ردیابی چهره‌ها (جدا
       const sc=ctr(SEL); let bd=1e9;
       for(const g of all){ const q=ctr(boxOf(g)), d=Math.hypot(q.x-sc.x,q.y-sc.y); if(d<bd){ bd=d; f=g; } }
       if(f && bd>Math.max(SEL.width,SEL.height)*1.2) f=null;
-      if(f){ SEL=boxOf(f); const mt=meshTarget(f); tgt={ b:SEL, p:mt.p, g:mt.g, good:GOOD, t:performance.now() }; }
+      if(f){ SEL=boxOf(f); const mt=meshTarget(f); tgt={ b:SEL, p:mt.p, g:mt.g, kk:mt.kk, eyes:eyeMetrics(f.mesh), good:GOOD, t:performance.now() }; }
     }
     TRK.selFace=f; TRK.seq++;
     await raf();
@@ -543,7 +583,7 @@ async function scan(){
   say(t("ok"));
   $("age").textContent="≈ "+age;
   $("rng").textContent=t("range")+": "+Math.max(1,age-sp)+" "+t("to")+" "+(age+sp)+" "+t("year");
-  $("det").textContent="A: "+Math.round(eA.mean)+"→"+Math.round(cA)+(cB!=null?"  •  B: "+Math.round(cB):"")+"  •  n="+smp.length;
+  $("det").textContent="A: "+Math.round(eA.mean)+"→"+Math.round(cA)+(cB!=null?"  •  B: "+Math.round(cB):"")+"  •  n="+smp.length+(ATT.on?"  •  att":"");
   $("mv").textContent=conf+"%"; $("mf").style.width="0"; $("result").style.display="block";
   requestAnimationFrame(()=>$("mf").style.width=conf+"%");
   H.unshift({age, ts:Date.now()}); saveH(); renderHist(); maybeAskRate();
@@ -621,6 +661,7 @@ async function scanPhoto(file){
   if(faces.length>1){ f=await pickStatic(faces); $("stage").classList.add("scanning"); say(t("analyzing")); }
   const [bx,by,bw,bh]=f.box;
   drawFace(octx, meshTarget(f).p, meshTarget(f).g, {x:bx,y:by,width:bw,height:bh}, true);
+  drawEyes(octx, eyeMetrics(f.mesh), 0);
   if(bw<70){ say(t("small"), true); done(); return; }
 
   // مدل A روی ۶ نسخه‌ی هم‌ترازشده (زوم‌های مختلف، عادی و آینه)
