@@ -582,8 +582,8 @@ const VC=[0,1,2,3,4,5].map(mk);
 function shiftFace(f,ox,oy){
   const g={...f};
   g.box=[f.box[0]+ox,f.box[1]+oy,f.box[2],f.box[3]];
-  g.mesh=f.mesh.map(q=>[q[0]+ox,q[1]+oy,q[2]]);
-  if(f.annotations){ g.annotations={}; for(const k in f.annotations) g.annotations[k]=f.annotations[k].map(q=>[q[0]+ox,q[1]+oy,q[2]]); }
+  g.mesh=f.mesh.map(q=>q?[q[0]+ox,q[1]+oy,q[2]]:q);
+  if(f.annotations){ g.annotations={}; for(const k in f.annotations){ const arr=f.annotations[k]; if(Array.isArray(arr)) g.annotations[k]=arr.map(q=>Array.isArray(q)?[q[0]+ox,q[1]+oy,q[2]]:q); } }
   return g;
 }
 const withTO=(pr,ms)=>Promise.race([pr,new Promise(res=>setTimeout(()=>res(null),ms))]);
@@ -624,7 +624,7 @@ function pickStatic(faces){
 }
 async function scanPhoto(file){
   try{ await scanPhotoInner(file); }
-  catch(e){ say("ایراد: "+String(e&&e.message||e).slice(0,200), true); busy=false; btn.disabled=false; SRC=null; drawing=false; showPick(false); pickCb=null; $("stage").classList.remove("scanning"); }
+  catch(e){ say("ایراد: "+String(e&&e.message||e).slice(0,160)+"\n"+String((e&&e.stack||"").split("\n")[1]||"").trim().slice(0,90), true); busy=false; btn.disabled=false; SRC=null; drawing=false; showPick(false); pickCb=null; $("stage").classList.remove("scanning"); }
 }
 async function scanPhotoInner(file){
   if(busy||!file) return;
